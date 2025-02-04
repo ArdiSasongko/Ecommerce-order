@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/ArdiSasongko/Ecommerce-order/internal/handler"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
@@ -34,8 +35,14 @@ type AuthConfig struct {
 
 func (a *Application) Mount() *fiber.App {
 	r := fiber.New()
+	r.Use(recover.New())
 
 	r.Get("/health", a.handler.Health.Check)
+
+	v1 := r.Group("/v1")
+	order := v1.Group("/order")
+	order.Use(a.handler.Middleware.AuthMiddleware())
+	order.Post("/", a.handler.Order.CreateOrder)
 
 	return r
 }
