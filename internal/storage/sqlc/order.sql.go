@@ -30,6 +30,38 @@ func (q *Queries) GetOrderByID(ctx context.Context, id int32) (Order, error) {
 	return i, err
 }
 
+const getOrdersByUserID = `-- name: GetOrdersByUserID :many
+SELECT id, user_id, total_price, status, orders_items, created_at, updated_at FROM orders WHERE user_id = $1
+`
+
+func (q *Queries) GetOrdersByUserID(ctx context.Context, userID int32) ([]Order, error) {
+	rows, err := q.db.Query(ctx, getOrdersByUserID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Order
+	for rows.Next() {
+		var i Order
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.TotalPrice,
+			&i.Status,
+			&i.OrdersItems,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const insertOrder = `-- name: InsertOrder :one
 INSERT INTO orders (user_id, total_price, status) values ($1, $2, $3) RETURNING id
 `

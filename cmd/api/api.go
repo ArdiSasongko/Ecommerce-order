@@ -45,6 +45,8 @@ func (a *Application) Mount() *fiber.App {
 
 	order.Use(a.handler.Middleware.AuthMiddleware())
 	order.Post("/", a.handler.Order.CreateOrder)
+	order.Get("/", a.handler.Order.GetOrders)
+	order.Get("/:orderID", a.handler.Order.GetOrder)
 
 	return r
 }
