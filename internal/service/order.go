@@ -159,3 +159,61 @@ func (s *OrderService) UpdateStatusOrder(ctx context.Context, req model.UpdateSt
 
 	return nil
 }
+
+func (s *OrderService) GetOrder(ctx context.Context, id int32) (*model.OrderResponse, error) {
+	order, err := s.q.GetOrderByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	ordersItem, err := s.q.GetOrderItemsByOrderID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	var items []model.OrderItemsResponse
+	for _, orderItem := range ordersItem {
+		priceFloat, _ := orderItem.Price.Float64Value()
+		order := model.OrderItemsResponse{
+			ID:        orderItem.ID,
+			OrderID:   orderItem.OrderID,
+			ProductID: orderItem.ProductID,
+			VariantID: orderItem.VariantID,
+			Price:     float32(priceFloat.Float64),
+			Quantity:  orderItem.Quantity,
+		}
+		items = append(items, order)
+	}
+
+	totalPrice, _ := order.TotalPrice.Float64Value()
+	resp := model.OrderResponse{
+		UserID:     order.UserID,
+		TotalPrice: float32(totalPrice.Float64),
+		Status:     string(order.Status),
+		OrderItems: items,
+	}
+
+	return &resp, nil
+}
+
+func (s *OrderService) GetOrders(ctx context.Context, id int32) ([]model.OrderResponse, error) {
+	orders, err := s.q.GetOrdersByUserID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	var resps []model.OrderResponse
+	for _, order := range orders {
+		totalPrice, _ := order.TotalPrice.Float64Value()
+		item := model.OrderResponse{
+			ID:         order.ID,
+			UserID:     order.UserID,
+			TotalPrice: float32(totalPrice.Float64),
+			Status:     string(order.Status),
+		}
+
+		resps = append(resps, item)
+	}
+
+	return resps, nil
+}

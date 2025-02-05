@@ -15,6 +15,8 @@ type Service struct {
 	Order interface {
 		CreateOrder(context.Context, *model.OrderPayload) (*model.OrderResponse, error)
 		UpdateStatusOrder(context.Context, model.UpdateStatus) error
+		GetOrder(context.Context, int32) (*model.OrderResponse, error)
+		GetOrders(context.Context, int32) ([]model.OrderResponse, error)
 	}
 }
 

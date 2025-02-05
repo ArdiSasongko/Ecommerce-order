@@ -9,3 +9,6 @@ UPDATE orders SET status = $1 WHERE id = $2;
 
 -- name: GetOrderByID :one
 SELECT * FROM orders WHERE id = $1;
+
+-- name: GetOrdersByUserID :many
+SELECT * FROM orders WHERE user_id = $1;

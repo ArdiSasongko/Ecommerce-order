@@ -36,6 +36,7 @@ func (u UpdateStatus) Validate() error {
 
 type (
 	OrderResponse struct {
+		ID         int32                `json:"id"`
 		UserID     int32                `json:"user_id"`
 		TotalPrice float32              `json:"total_price"`
 		Status     string               `json:"status"`
@@ -43,6 +44,7 @@ type (
 	}
 
 	OrderItemsResponse struct {
+		ID        int32   `json:"id"`
 		OrderID   int32   `json:"order_id"`
 		ProductID int32   `json:"product_id"`
 		VariantID int32   `json:"variant_id"`

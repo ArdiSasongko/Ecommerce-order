@@ -15,6 +15,8 @@ type Handler struct {
 	Order interface {
 		CreateOrder(*fiber.Ctx) error
 		UpdateStatus(*fiber.Ctx) error
+		GetOrder(*fiber.Ctx) error
+		GetOrders(*fiber.Ctx) error
 	}
 	Middleware interface {
 		AuthMiddleware() fiber.Handler
