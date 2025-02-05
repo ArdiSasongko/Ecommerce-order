@@ -41,6 +41,8 @@ func (a *Application) Mount() *fiber.App {
 
 	v1 := r.Group("/v1")
 	order := v1.Group("/order")
+	order.Patch("/:orderID", a.handler.Order.UpdateStatus)
+
 	order.Use(a.handler.Middleware.AuthMiddleware())
 	order.Post("/", a.handler.Order.CreateOrder)
 

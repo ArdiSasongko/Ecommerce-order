@@ -17,6 +17,7 @@ const (
 	OrderStatusPending   OrderStatus = "pending"
 	OrderStatusCompleted OrderStatus = "completed"
 	OrderStatusCancelled OrderStatus = "cancelled"
+	OrderStatusRefunded  OrderStatus = "refunded"
 )
 
 func (e *OrderStatus) Scan(src interface{}) error {

@@ -3,6 +3,7 @@ module github.com/ArdiSasongko/Ecommerce-order
 go 1.23.2
 
 require (
+	github.com/IBM/sarama v1.45.0
 	github.com/go-playground/validator/v10 v10.24.0
 	github.com/gofiber/fiber/v2 v2.52.6
 	github.com/golang-jwt/jwt/v5 v5.2.1
@@ -12,7 +13,6 @@ require (
 )
 
 require (
-	github.com/IBM/sarama v1.45.0 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/eapache/go-resiliency v1.7.0 // indirect

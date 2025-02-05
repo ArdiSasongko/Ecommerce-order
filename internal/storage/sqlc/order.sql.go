@@ -11,6 +11,25 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getOrderByID = `-- name: GetOrderByID :one
+SELECT id, user_id, total_price, status, orders_items, created_at, updated_at FROM orders WHERE id = $1
+`
+
+func (q *Queries) GetOrderByID(ctx context.Context, id int32) (Order, error) {
+	row := q.db.QueryRow(ctx, getOrderByID, id)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TotalPrice,
+		&i.Status,
+		&i.OrdersItems,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const insertOrder = `-- name: InsertOrder :one
 INSERT INTO orders (user_id, total_price, status) values ($1, $2, $3) RETURNING id
 `
