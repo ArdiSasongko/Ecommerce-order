@@ -1,4 +1,4 @@
-CREATE TYPE order_status AS ENUM ('pending', 'completed', 'cancelled');
+CREATE TYPE order_status AS ENUM ('pending', 'completed', 'cancelled', 'refunded');
 
 CREATE TABLE IF NOT EXISTS orders (
     id serial PRIMARY KEY,

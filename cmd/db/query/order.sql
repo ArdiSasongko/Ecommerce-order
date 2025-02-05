@@ -6,3 +6,6 @@ UPDATE orders SET orders_items = $1 WHERE id = $2;
 
 -- name: UpdateStatus :exec
 UPDATE orders SET status = $1 WHERE id = $2;
+
+-- name: GetOrderByID :one
+SELECT * FROM orders WHERE id = $1;

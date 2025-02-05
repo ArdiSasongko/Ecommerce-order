@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	"github.com/ArdiSasongko/Ecommerce-order/internal/external"
 	"github.com/ArdiSasongko/Ecommerce-order/internal/model"
@@ -12,16 +13,29 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+var StatusOrder = map[string]bool{
+	"pending":   true,
+	"cancelled": true,
+	"refunded":  true,
+	"completed": true,
+}
+
+var FlowUpdate = map[string][]string{
+	"pending":   {"cancelled", "refunded", "completed"},
+	"refunded":  {"cancelled", "completed"},
+	"completed": {"refunded"},
+}
+
 type OrderService struct {
 	q        *sqlc.Queries
 	db       *pgxpool.Pool
 	external external.External
 }
 
-func (s *OrderService) insertOrder(ctx context.Context, req model.OrderPayload) (int32, error) {
+func (s *OrderService) insertOrder(ctx context.Context, req model.OrderPayload) (int32, string, error) {
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	defer tx.Rollback(ctx)
 
@@ -30,7 +44,7 @@ func (s *OrderService) insertOrder(ctx context.Context, req model.OrderPayload) 
 	priceStr := fmt.Sprintf("%.2f", req.TotalPrice)
 	priceNumeric := pgtype.Numeric{}
 	if err := priceNumeric.Scan(priceStr); err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
 	req.Status = string(sqlc.OrderStatusPending)
@@ -40,7 +54,7 @@ func (s *OrderService) insertOrder(ctx context.Context, req model.OrderPayload) 
 		Status:     sqlc.OrderStatus(req.Status),
 	})
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
 	var ids []int32
@@ -49,7 +63,7 @@ func (s *OrderService) insertOrder(ctx context.Context, req model.OrderPayload) 
 		priceStr := fmt.Sprintf("%.2f", item.Price)
 		priceNumeric := pgtype.Numeric{}
 		if err := priceNumeric.Scan(priceStr); err != nil {
-			return 0, err
+			return 0, "", err
 		}
 		idItems, err := qtx.InsertOrderItem(ctx, sqlc.InsertOrderItemParams{
 			OrderID:   id,
@@ -60,7 +74,7 @@ func (s *OrderService) insertOrder(ctx context.Context, req model.OrderPayload) 
 		})
 
 		if err != nil {
-			return 0, err
+			return 0, "", err
 		}
 
 		ids = append(ids, idItems)
@@ -70,18 +84,18 @@ func (s *OrderService) insertOrder(ctx context.Context, req model.OrderPayload) 
 		OrdersItems: ids,
 		ID:          id,
 	}); err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
-	return id, nil
+	return id, req.Status, nil
 }
 
 func (s *OrderService) CreateOrder(ctx context.Context, req *model.OrderPayload) (*model.OrderResponse, error) {
-	id, err := s.insertOrder(ctx, *req)
+	id, status, err := s.insertOrder(ctx, *req)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +123,39 @@ func (s *OrderService) CreateOrder(ctx context.Context, req *model.OrderPayload)
 
 	return &model.OrderResponse{
 		TotalPrice: req.TotalPrice,
-		Status:     req.Status,
+		Status:     status,
 		UserID:     req.UserID,
 	}, nil
+}
+
+func checkValidFlow(from, to string) bool {
+	allowed, ok := FlowUpdate[from]
+	if !ok {
+		return false
+	}
+	return slices.Contains(allowed, to)
+}
+
+func (s *OrderService) UpdateStatusOrder(ctx context.Context, req model.UpdateStatus) error {
+	if !StatusOrder[req.Status] {
+		return fmt.Errorf("invalid status! only 'pending', 'cancelled', 'completed', 'refunded'")
+	}
+
+	order, err := s.q.GetOrderByID(ctx, req.OrderID)
+	if err != nil {
+		return err
+	}
+
+	if !checkValidFlow(string(order.Status), req.Status) {
+		return fmt.Errorf("invalid flow update status")
+	}
+
+	if err := s.q.UpdateStatus(ctx, sqlc.UpdateStatusParams{
+		Status: sqlc.OrderStatus(req.Status),
+		ID:     req.OrderID,
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }
